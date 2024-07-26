@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import { mongo } from "mongoose";
+import { mongoose } from "mongoose";
 
 // const registerUser = asyncHandler(async(req,res)=>{
 //     res.status(200).json({
@@ -130,7 +130,7 @@ const loginUser = asyncHandler(async (req, res) => {
   //access and referesh token
   //send cookie
 
-  const { email, username, password, oldPassword, newPassword } = req.body;
+  const { email, username, password} = req.body;
   console.log(email, req.body);
 
   if (!username && !email) {
@@ -191,8 +191,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1, //this removes the field from the document
       },
     },
     {
@@ -242,7 +242,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     };
 
     const { accessToken, newRefreshToken } =
-      await generateAccessAndRefereshTokens(user._id);
+      await generateAccessAndRefreshTokens(user._id);
+
+    console.log(newRefreshToken)
 
     return res
       .status(200)
@@ -406,7 +408,7 @@ const getUserChannelProfile = asyncHandler(async(req,res)=>{
         },
         isSubscribed : {
           $cond :{
-            if:{$in:[req.user?._id,"subscribers.subscriber"]},
+            if:{$in:[req.user?._id,"$subscribers.subscriber"]},
             then:true,
             else:false
           } 
@@ -438,7 +440,7 @@ const getWatchHistory = asyncHandler(async(req,res)=>{
   const user = await User.aggregate([
     {
       $match:{
-        _id : new mongo.TopologyDescription.ObjectId(req.user._id),
+        _id :  new mongoose.Types.ObjectId(req.user._id),
       }
     }
     ,{
@@ -474,11 +476,10 @@ const getWatchHistory = asyncHandler(async(req,res)=>{
           }
         ]
       }
-    },
-    {
-
     }
   ])
+
+  console.log(user);
 
   return res.status(200).json(
     new ApiResponse(
