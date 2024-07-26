@@ -17,6 +17,13 @@ app.use(express.static("public"))
 
 app.use(cookieParser())
 
+
+// Enforce HTTPS
+app.use(enforceHttps());
+
+// Secure headers
+app.use(helmet());
+
 //routes import
 import userRouter  from './routes/user.routes.js'
 
